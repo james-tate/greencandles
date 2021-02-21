@@ -8,17 +8,6 @@ import pandas as pd
 import greenCandles as candles
 from filelock import Timeout, FileLock
 
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-
 class CandleConnector():
     def __init__(self):
         self.lock = FileLock("config.csv.lock")
@@ -63,13 +52,13 @@ class CandleConnector():
             f.write(message)
             f.write("\n")
 
-    def saveCoinBuyData(self, coin, price, amount, setcap=None, setupdatetime=300):
+    def saveCoinBuyData(self, coin, price, amount, setcap=0.0, setupdatetime=180):
         df = self.readConfig()
-        if setcap is not None:
+        if setcap > 0:
             df.at[coin, 'capital'] = setcap
         df.at[coin, 'starting'] = price
         df.at[coin, 'autobought'] = amount
-        df.at[coin, 'limit'] = price * .99
+        df.at[coin, 'limit'] = price * df.at[coin, 'takeprofit']
         df.at[coin, 'updatetime'] = setupdatetime
         self.setCoinConfigData(df)
 
@@ -110,7 +99,7 @@ class CandleConnector():
 
     def runForever(self):
         while 1:
-            self.masterTicker += 1
+            self.masterTicker += 10
             df = self.readConfig()
             # loop over the contents of our config file
             for index, row in df.iterrows():
@@ -138,4 +127,5 @@ connector = CandleConnector()
 while 1:
     #TODO add away to enable testing
     #connector.saveCoinBuyData("ADAUSD", float(connector.getQuote("ADAUSD")), 20)
+    #TODO add a web interface that will display the current buying data
     connector.runForever()

@@ -7,20 +7,9 @@ import time
 import greenCandles as candles
 import pandas as pd
 import threading
+from filelock import Timeout, FileLock
 
 app = Flask(__name__)
-
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-
 
 #this class is the top layer for the monitor and interface
 class CandleConnector():
@@ -60,6 +49,9 @@ class CandleConnector():
     def getQuote(self, coin):
         return float(self.candles.getCoinPrice(coin))
 
+    def getBuyPower(self):
+        return float(self.candles.getUSD())
+
     # set an order for an number amount
     def orderAmount(self, coin, amount):
         return (self.candles.order_buy_crypto_by_price(coin, amount))
@@ -76,20 +68,25 @@ class CandleConnector():
             df.at[coin, 'capital'] = setcap
         df.at[coin, 'starting'] = price
         df.at[coin, 'autobought'] = amount
-        df.at[coin, 'limit'] = price * .99
+        df.at[coin, 'limit'] = price * df.at[coin, 'takeprofit']
         df.at[coin, 'updatetime'] = setupdatetime
         self.setCoinConfigData(df)
 
     # check to see how much can be purchased with the current capital
     # then purchase that amount of coins
     def buyNow(self, coin, strat=None):
+        coinsCapital = self.getCoinConfigData(coin)['capital']
+        avalFunds = self.getUSD()
+        if coinsCapital < avalFunds:
+            return 0
+
         price = self.getQuote(coin)
         #TODO add logic that allows for multiple strategies that will 
         #allow for different allocations of the starting capital
-        BOUGHT = float(self.getCoinConfigData(coin)['capital'] / self.getQuote(coin))
+        BOUGHT = float(coinsCapital / self.getQuote(coin))
         minOrder = None
-        minNot = None
-
+        minNot = None   
+        print(BOUGHT)
         #grab the trading rules for the coin
         for filt in (self.candles.getCoinInfo(coin)['filters']):
             if filt['filterType'] == "LOT_SIZE":
@@ -102,7 +99,9 @@ class CandleConnector():
         if mod:
             BOUGHT = BOUGHT - mod
 
-
+        #this needs to get the perciesion from the filter
+        BOUGHT = round(BOUGHT, 8)
+        print(BOUGHT)
         if (BOUGHT * price) > minNot:
             order = self.orderNumber(coin, BOUGHT)
             self.saveCoinBuyData(coin, price, BOUGHT)
