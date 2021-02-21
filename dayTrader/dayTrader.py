@@ -88,7 +88,9 @@ class CandleConnector():
 			order = self.orderNumber(coin, BOUGHT)
 			self.saveCoinBuyData(coin, price, BOUGHT)
 			self.logit(f"BUYING {order}", coin)
-			return orderID = sellorder['clientOrderId']
+			sellprice = float(order['fills'][0]['price']) * amount
+			print(sellprice)
+			return orderID = order['clientOrderId']
 		else:
 			BOUGHT = None
 			self.logit(f"Failed to buy {BOUGHT}, {coin}. Due minNotional of {minNot}", coin)

@@ -74,7 +74,7 @@ class CandleConnector():
         self.setCoinConfigData(df)
 
 
-    def saveCoinLimitData(self, coin, price, limit, setupdatetime=300):
+    def saveCoinLimitData(self, coin, price, limit, setupdatetime=180):
         df = self.readConfig()
         df.at[coin, 'currentPrice'] = price
         df.at[coin, 'limit'] = limit
@@ -115,7 +115,7 @@ class CandleConnector():
             # loop over the contents of our config file
             for index, row in df.iterrows():
                 # check to see if the bot has made a purchase
-                position = int(row['autobought'])
+                position = float(row['autobought'])
                 if position > 0:
                     currentPrice = self.getQuote(index)
                     # if the bot has bought, check the update time
@@ -123,17 +123,13 @@ class CandleConnector():
                     if self.masterTicker % updatetime == 0:
                         #get the current price and check if it's above our current limit
                         currentLimit = float(row['limit'])
-                        print(f"\tLimit {currentLimit}")
-                        print(f"Price {currentPrice}")
                         if currentPrice < currentLimit:
-                            print("selling")
-                            #self.sellNow(index)
+                            self.sellNow(index)
                         else:
                             # calculate a new limit based on our coin's config profile
                             newlimit = currentPrice*float(row['takeprofit'])
                             if newlimit > currentLimit:
                                 self.saveCoinLimitData(index, currentPrice, newlimit)
-                                print(f"\t\tNewlimit {newlimit}")
                     self.logit(f"{row.starting}, {currentPrice}, {row.limit}", index)
             time.sleep(10)
 
@@ -141,5 +137,5 @@ connector = CandleConnector()
 
 while 1:
     #TODO add away to enable testing
-    connector.saveCoinBuyData("ADAUSD", float(connector.getQuote("ADAUSD")), 20)
+    #connector.saveCoinBuyData("ADAUSD", float(connector.getQuote("ADAUSD")), 20)
     connector.runForever()

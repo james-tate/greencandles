@@ -5,11 +5,10 @@ import json
 from threading import Thread
 import time
 import greenCandles as candles
+import pandas as pd
 import threading
 
 app = Flask(__name__)
-
-CAPITAL = 7
 
 class bcolors:
     HEADER = '\033[95m'
@@ -29,7 +28,7 @@ class CandleConnector():
         self.lock = FileLock("config.csv.lock")
         # make dict here that stores the amount for each coin
         self.config = "config.csv"
-        self.candles = BinaceConnector()
+        self.candles = candles.BinaceConnector()
 
     def readConfig(self):
         self.lock.acquire()
@@ -71,13 +70,13 @@ class CandleConnector():
             f.write(message)
             f.write("\n")
 
-    def saveCoinBuyData(self, coin, price, amount, setcap=None, setupdatetime=300):
+    def saveCoinBuyData(self, coin, price, amount, setcap=None, setupdatetime=180):
         df = self.readConfig()
         if setcap is not None:
             df.at[coin, 'capital'] = setcap
         df.at[coin, 'starting'] = price
         df.at[coin, 'autobought'] = amount
-        df.at[coin, 'limit'] = price * .98
+        df.at[coin, 'limit'] = price * .99
         df.at[coin, 'updatetime'] = setupdatetime
         self.setCoinConfigData(df)
 
@@ -139,6 +138,15 @@ class CandleConnector():
             print(sellprice)
             self.saveCoinBuyData(coin, 0, 0, setcap=sellprice)
 
+    def doit(self, coin, action):
+        self.logit(f"buysell {action}", "logger")
+        self.logit(f"symbol {coin}", "logger")
+        if action == 'sell':
+            self.sellNow(coin)
+        if action == 'buy':
+            self.buyNow(coin)
+
+
 
 # =========================================================================
 connector = CandleConnector()
@@ -158,16 +166,11 @@ def stratAccept():
         symbol = incoming['symbol']
         action = incoming['action']
         print(symbol)
-        if incoming['action'] == "buy":
-            if float(candles.getPower()) > CAPITAL + 5:
-                connector.doit(symbol, action)
-        else:
-            connector.doit(symbol, incoming['action'])
+        connector.doit(symbol, action)
         return ""
     except Exception as e:
         print(e)
         return ""
 
 if __name__ == '__main__':
-    print(candles.getPower())
     app.run(host='0.0.0.0', port=11337, debug=True)
