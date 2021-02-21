@@ -3,6 +3,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+<<<<<<< HEAD
+=======
+tester.py
+
+>>>>>>> master
 # C extensions
 *.so
 
@@ -126,4 +131,8 @@ venv.bak/
 dmypy.json
 
 # Pyre type checker
+<<<<<<< HEAD
 .pyre/
+=======
+.pyre/
+>>>>>>> master
