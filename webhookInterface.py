@@ -80,8 +80,8 @@ class CandleConnector():
     # then purchase that amount of coins
     def buyNow(self, coin, strat=None):
         coinsCapital = self.getCoinConfigData(coin)['capital']
-        avalFunds = self.getUSD()
-        if coinsCapital < avalFunds:
+        avalFunds = self.getBuyPower()
+        if (coinsCapital > avalFunds) is True:
             return 0
 
         price = self.getQuote(coin)

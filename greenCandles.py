@@ -74,6 +74,50 @@ class BinaceConnector():
 	def sellMarket(self, coin, amount):
 		return self.client.order_market_sell(symbol=coin, quantity=amount)
 
+	# place a stoploss
+	def stopLoss(self, coin, stop, limit, position):
+		multiplierUp = 0
+		multiplierDown = 0
+		
+		info = self.getCoinInfo(coin)
+
+		quotePrecision = int(info['quotePrecision'])
+
+		for filt in info['filters']:
+			if filt['filterType'] == "PERCENT_PRICE":
+				multiplierUp = float(filt['multiplierUp'])
+				multiplierDown = float(filt['multiplierDown'])
+
+		currentPrice = float(self.getCoinPrice(coin))
+
+		upPrice = currentPrice * multiplierUp
+		downPrice = currentPrice * multiplierDown
+
+		stoper = round(stop, quotePrecision - 1)
+		limiter = round(limit, quotePrecision - 1)
+		if stoper > upPrice:
+			print("TOHIGH")
+			return None
+		if stoper < downPrice:
+			print("TOLOW")
+			return None
+
+		if limiter > upPrice:
+			print("TOHIGH")
+			return None
+		if limiter < downPrice:
+			print("TOLOW")
+			return None
+
+		output  = self.client.create_order(symbol=coin, 
+			timeInForce='GTC',
+			type='STOP_LOSS_LIMIT', 
+			quantity=position, 
+			side="sell", 
+			price = limiter, 
+			stopPrice=stoper)
+		return output
+
 	#test order will return {} if great success
 	def testOrder(self, coin, act, amount):
 		print(self.client.create_test_order( 

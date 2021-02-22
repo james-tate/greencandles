@@ -124,6 +124,13 @@ class CandleConnector():
                             newlimit = currentPrice*float(row['takeprofit'])
                             if newlimit > currentLimit:
                                 self.saveCoinLimitData(coin, currentPrice, newlimit)
+                #TODO before this is enabled need a way to tell if we had a position before the bot purchase
+                    if row.starting + (float(row.starting) * (2 * 0.001)) > currentPrice:
+                        print(connector.candles.stopLoss(coin, 
+                            stop=(row.starting + (row.starting * (2 * .0008))), 
+                            limit=(row.starting + (row.starting * (2 * .00075))), 
+                            position=position))
+
                     self.logit(f"{self.masterTicker}, {row.starting}, {currentPrice}, {row.limit}", coin)
             self.echoCurrentTick()
             time.sleep(10)
@@ -133,5 +140,4 @@ connector = CandleConnector()
 while 1:
     #TODO add away to enable testing
     #connector.saveCoinBuyData("ADAUSD", float(connector.getQuote("ADAUSD")), 20)
-    #TODO add a web interface that will display the current buying data
     connector.runForever()

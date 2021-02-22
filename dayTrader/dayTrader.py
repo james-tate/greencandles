@@ -4,6 +4,7 @@ sys.path.append('../../')
 
 import greenCandles as candles
 import argparse
+import pandas as pd
 from filelock import Timeout, FileLock
 
 class CandleConnector():
@@ -16,7 +17,7 @@ class CandleConnector():
 	def readConfig(self):
 		self.lock.acquire()
 		df = pd.read_csv(self.config,encoding='utf8', delimiter=',' , 
-			names=['coin', 'capital', 'starting', 'limit', 'currentPrice', 'autobought', 'updatetime'])
+			names=['coin', 'capital', 'starting', 'limit', 'currentPrice', 'autobought', 'takeprofit', 'updatetime'])
 		self.lock.release()
 		df.set_index('coin', inplace=True)
 		return df
@@ -25,6 +26,9 @@ class CandleConnector():
 	def getCoinConfigData(self, coin):
 		df = self.readConfig()
 		return df.loc[coin]
+
+	def getBuyPower(self):
+		return float(self.candles.getUSD())
 
 	#save a new copy of the config
 	def setCoinConfigData(self, df):
@@ -65,41 +69,42 @@ class CandleConnector():
 	# check to see how much can be purchased with the current capital
 	# then purchase that amount of coins
 	def buyNow(self, coin, strat=None):
-        coinsCapital = self.getCoinConfigData(coin)['capital']
-        avalFunds = self.getUSD()
-        if coinsCapital < avalFunds:
-            return 0
+		coinsCapital = self.getCoinConfigData(coin)['capital']
 
-        price = self.getQuote(coin)
-        #TODO add logic that allows for multiple strategies that will 
-        #allow for different allocations of the starting capital
-        BOUGHT = float(coinsCapital / self.getQuote(coin))
-        minOrder = None
-        minNot = None   
-        print(BOUGHT)
-        #grab the trading rules for the coin
-        for filt in (self.candles.getCoinInfo(coin)['filters']):
-            if filt['filterType'] == "LOT_SIZE":
-                minOrder = float(filt['minQty'])
-            if filt['filterType'] == 'MIN_NOTIONAL':
-                minNot = float(filt['minNotional'])
-        mod = BOUGHT % minOrder
+		avalFunds = self.getBuyPower()
+		if (coinsCapital > avalFunds) is True:
+			return 0
 
-        #make sure the amount we are buying is standardized for Binance
-        if mod:
-            BOUGHT = BOUGHT - mod
+		price = self.getQuote(coin)
+		#TODO add logic that allows for multiple strategies that will 
+		#allow for different allocations of the starting capital
+		BOUGHT = float(coinsCapital / self.getQuote(coin))
+		minOrder = None
+		minNot = None   
+		print(BOUGHT)
+		#grab the trading rules for the coin
+		for filt in (self.candles.getCoinInfo(coin)['filters']):
+			if filt['filterType'] == "LOT_SIZE":
+				minOrder = float(filt['minQty'])
+			if filt['filterType'] == 'MIN_NOTIONAL':
+				minNot = float(filt['minNotional'])
+		mod = BOUGHT % minOrder
 
-        #this needs to get the perciesion from the filter
-        BOUGHT = round(BOUGHT, 8)
-        print(BOUGHT)
-        if (BOUGHT * price) > minNot:
-            order = self.orderNumber(coin, BOUGHT)
-            self.saveCoinBuyData(coin, price, BOUGHT)
-            self.logit(f"BUYING {order}", coin)
-        else:
-            BOUGHT = None
-            self.logit(f"Failed to buy {BOUGHT}, {coin}. Due minNotional of {minNot}", coin)
-        return BOUGHT
+		#make sure the amount we are buying is standardized for Binance
+		if mod:
+			BOUGHT = BOUGHT - mod
+
+		#this needs to get the perciesion from the filter
+		BOUGHT = round(BOUGHT, 8)
+		print(BOUGHT)
+		if (BOUGHT * price) > minNot:
+			order = self.orderNumber(coin, BOUGHT)
+			self.saveCoinBuyData(coin, price, BOUGHT)
+			self.logit(f"BUYING {order}", coin)
+		else:
+			BOUGHT = None
+			self.logit(f"Failed to buy {BOUGHT}, {coin}. Due minNotional of {minNot}", coin)
+		return BOUGHT
 
 	#sell an amount at current price
 	def sellNow(self, coin):
@@ -145,7 +150,13 @@ if args.test:
 
 else:
 	#TODO add api info to get the order data
-	print(connector.buyNow(coin))
-	input("Press enter when ready to sell ") 
-	print(connector.sellNow(coin))
-
+	price = float(connector.getQuote(coin)) - 5
+	# bought = connector.buyNow(coin)
+	# print(bought)
+	# input("Press enter when ready to sell ") 
+	print(price)
+	print(connector.candles.stopLoss(coin, 
+		stop=(price + (price * (2 * .0008))), 
+		limit=(price + (price * (2 * .00075))), 
+		position=0.00638))
+	# print(connector.sellNow(coin))
