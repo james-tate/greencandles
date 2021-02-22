@@ -1,13 +1,17 @@
 #!/usr/bin/python3
 
-from flask import Flask, request 
+from flask import Flask, request, render_template
 import json
 from threading import Thread
 import time
 import greenCandles as candles
 import pandas as pd
 import threading
+import plotly
+import plotly.graph_objects as go
 from filelock import Timeout, FileLock
+from datetime import datetime
+import os
 
 app = Flask(__name__)
 
@@ -105,10 +109,12 @@ class CandleConnector():
         if (BOUGHT * price) > minNot:
             order = self.orderNumber(coin, BOUGHT)
             self.saveCoinBuyData(coin, price, BOUGHT)
-            self.logit(f"BUYING {order}", coin)
+            self.logit(f"BUYING {order}", "logger")
+            #reset our coin data so we can have a current graph
+            os.rename(f"testData/{coin}.txt", f"testData/{coin}{datetime.now()}.txt")
         else:
             BOUGHT = None
-            self.logit(f"Failed to buy {BOUGHT}, {coin}. Due minNotional of {minNot}", coin)
+            self.logit(f"Failed to buy {BOUGHT}, {coin}. Due minNotional of {minNot}", "logger")
         return BOUGHT
 
     #sell an amount at current price
@@ -132,7 +138,7 @@ class CandleConnector():
                 time.sleep(2)
 
             # save the data for analysis later and reset the bot coin's config
-            self.logit(f"SELLING DUE TO STRAT {sellorder}", coin)
+            self.logit(f"SELLING DUE TO STRAT {sellorder}", "logger")
             sellprice = float(sellorder['fills'][0]['price']) * amount
             print(sellprice)
             self.saveCoinBuyData(coin, 0, 0, setcap=sellprice)
@@ -173,12 +179,13 @@ def stratAccept():
 
 @app.route('/monitorView')
 def monitorView():
+    #TODO change this to templete
     currentTick = 0
     with open('tick', 'r') as f:
         currentTick = f.read()
-    print(currentTick)
     book = connector.candles.getBook()
-    page = "<style>\
+    page = "<!DOCTYPE html> <html> <meta http-equiv=\"refresh\" content=\"10\" /><body>"
+    page += "<style>\
             table {\
                 font-size: .8em;\
                 font-family: arial, sans-serif;\
@@ -195,7 +202,10 @@ def monitorView():
                 background-color: #dddddd;\
             }\
             </style>"
+    page += '<p id="currentTime"></p>'
+    page += '<p id="update"></p>'
     df = connector.readConfig()
+    page += f'<h3>CURRENT TICK {currentTick}</h3>'
     page += '<table style="width:60%">'
     page += f'<tr style=\"height:50px\"><th> </th><th>capital</th><th>starting</th><th>limit</th>\
     <th>currentPrice</th><th>position</th><th>takeprofit</th><th>updatetime</th><th>askPrice</th>\
@@ -211,25 +221,40 @@ def monitorView():
                 askQty = float(x['askQty'])
                 binPrice = float(x['bidPrice'])
                 bidQty = float(x['bidQty'])
-        page += f"<tr><td style=\"font-weight:bold\">{coin}</td><td>{row['capital']}</td><td>{row['starting']}</td>\
+        page += f"<tr><td style=\"font-weight:bold\"><a href=\"/graphLimit?coin={coin}\">{coin}</a></td>\
+            <td>{row['capital']}</td><td>{row['starting']}</td>\
             <td>{row['limit']}</td><td>{row['currentPrice']}</td><td>{row['autobought']}</td>\
             <td>{row['takeprofit']}</td><td>{row['updatetime']}</td><td>{askPrice}</td>\
             <td>{askQty}</td><td>{binPrice}</td><td>{bidQty}</td></tr>"
     page += '</table>'
+    page += f'<script> var myVar = setInterval(myTimer, 1000); \
+        function myTimer() {{ \
+            var d = new Date();\
+            var t = d.toLocaleTimeString(); \
+            document.getElementById("currentTime").innerHTML = t;}}\
+        </script>'
+    page += '</body> </html>'
 
     return page
 
 #graph the limit to etc here
-@app.route('/graphLimit')
+@app.route('/graphLimit', methods=['GET'])
 def limitGraph():
-    return "working"
+
+    df = pd.read_csv(f'testData/{request.args.get("coin")}.txt' ,encoding='utf8', delimiter=',' , names=['start', 'price', 'limit',])
+    fig = go.Figure()
+    fig.add_traces(go.Scatter(x=df.index, y = df['price'], mode = 'lines', name="price"))
+    fig.add_traces(go.Scatter(x=df.index, y = df['start'], mode = 'lines', name="start"))
+    fig.add_traces(go.Scatter(x=df.index, y = df['limit'], mode = 'lines', name="limit"))
+    plotly.offline.plot(fig, filename='templates/name.html')
+    # bar = create_plot()
+    return render_template("name.html")
 
 @app.route('/purchased')
 def purchased():
     currentTick = 0
     with open('tick', 'r') as f:
         currentTick = f.read()
-    print(currentTick)
     book = connector.candles.getBook()
     page = "<style>\
             table {\
@@ -249,6 +274,7 @@ def purchased():
             }\
             </style>"
     df = connector.readConfig()
+    page += f'<h3>CURRENT TICK {currentTick}</h3>'
     page += '<table style="width:60%">'
     page += f'<tr style=\"height:50px\"><th> </th><th>capital</th><th>starting</th><th>limit</th>\
     <th>currentPrice</th><th>position</th><th>takeprofit</th><th>updatetime</th><th>askPrice</th>\

@@ -90,7 +90,7 @@ class CandleConnector():
                 time.sleep(2)
 
             # save the data for analysis later and reset the bot coin's config
-            self.logit(f"SELLING DUE TO TAKEPROFIT {sellorder}", coin)
+            self.logit(f"SELLING DUE TO TAKEPROFIT {sellorder}", "logger")
             sellprice = float(sellorder['fills'][0]['price']) * amount
             print(sellprice)
             self.saveCoinBuyData(coin, 0, 0, setcap=sellprice)

@@ -65,36 +65,41 @@ class CandleConnector():
 	# check to see how much can be purchased with the current capital
 	# then purchase that amount of coins
 	def buyNow(self, coin, strat=None):
-		price = self.getQuote(coin)
-		#TODO add logic that allows for multiple strategies that will 
+        coinsCapital = self.getCoinConfigData(coin)['capital']
+        avalFunds = self.getUSD()
+        if coinsCapital < avalFunds:
+            return 0
+
+        price = self.getQuote(coin)
+        #TODO add logic that allows for multiple strategies that will 
         #allow for different allocations of the starting capital
-		BOUGHT = float(self.getCoinConfigData(coin)['capital'] / self.getQuote(coin))
-		minOrder = None
-		minNot = None
+        BOUGHT = float(coinsCapital / self.getQuote(coin))
+        minOrder = None
+        minNot = None   
+        print(BOUGHT)
+        #grab the trading rules for the coin
+        for filt in (self.candles.getCoinInfo(coin)['filters']):
+            if filt['filterType'] == "LOT_SIZE":
+                minOrder = float(filt['minQty'])
+            if filt['filterType'] == 'MIN_NOTIONAL':
+                minNot = float(filt['minNotional'])
+        mod = BOUGHT % minOrder
 
-		#grab the trading rules for the coin
-		for filt in (self.candles.getCoinInfo(coin)['filters']):
-			if filt['filterType'] == "LOT_SIZE":
-				minOrder = float(filt['minQty'])
-			if filt['filterType'] == 'MIN_NOTIONAL':
-				minNot = float(filt['minNotional'])
-		mod = BOUGHT % minOrder
+        #make sure the amount we are buying is standardized for Binance
+        if mod:
+            BOUGHT = BOUGHT - mod
 
-		#make sure the amount we are buying is standardized for Binance
-		if mod:
-			BOUGHT = BOUGHT - mod
-
-		if (BOUGHT * price) > minNot:
-			order = self.orderNumber(coin, BOUGHT)
-			self.saveCoinBuyData(coin, price, BOUGHT)
-			self.logit(f"BUYING {order}", coin)
-			sellprice = float(order['fills'][0]['price']) * amount
-			print(sellprice)
-			return orderID = order['clientOrderId']
-		else:
-			BOUGHT = None
-			self.logit(f"Failed to buy {BOUGHT}, {coin}. Due minNotional of {minNot}", coin)
-		return BOUGHT
+        #this needs to get the perciesion from the filter
+        BOUGHT = round(BOUGHT, 8)
+        print(BOUGHT)
+        if (BOUGHT * price) > minNot:
+            order = self.orderNumber(coin, BOUGHT)
+            self.saveCoinBuyData(coin, price, BOUGHT)
+            self.logit(f"BUYING {order}", coin)
+        else:
+            BOUGHT = None
+            self.logit(f"Failed to buy {BOUGHT}, {coin}. Due minNotional of {minNot}", coin)
+        return BOUGHT
 
 	#sell an amount at current price
 	def sellNow(self, coin):
