@@ -3,11 +3,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-<<<<<<< HEAD
-=======
-tester.py
 
->>>>>>> master
+tester.py
+tick
+testData/
+
 # C extensions
 *.so
 

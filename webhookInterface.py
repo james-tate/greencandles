@@ -171,5 +171,108 @@ def stratAccept():
         print(e)
         return ""
 
+@app.route('/monitorView')
+def monitorView():
+    currentTick = 0
+    with open('tick', 'r') as f:
+        currentTick = f.read()
+    print(currentTick)
+    book = connector.candles.getBook()
+    page = "<style>\
+            table {\
+                font-size: .8em;\
+                font-family: arial, sans-serif;\
+                border-collapse: collapse;\
+                width: 300%;\
+            }\
+            td, th {\
+                width: 100px;\
+                border: 1px solid #dddddd;\
+                text-align: center;\
+                padding: 1px;\
+            }\
+            tr:nth-child(even) {\
+                background-color: #dddddd;\
+            }\
+            </style>"
+    df = connector.readConfig()
+    page += '<table style="width:60%">'
+    page += f'<tr style=\"height:50px\"><th> </th><th>capital</th><th>starting</th><th>limit</th>\
+    <th>currentPrice</th><th>position</th><th>takeprofit</th><th>updatetime</th><th>askPrice</th>\
+    <th>askQty</th><th>bidPrice</th><th>bidQty</th></tr>'
+    for coin, row in df.iterrows():
+        askPrice = 0
+        askQty = 0
+        binPrice = 0
+        bidQty = 0
+        for x in book:
+            if coin == x['symbol']:
+                askPrice = float(x['askPrice'])
+                askQty = float(x['askQty'])
+                binPrice = float(x['bidPrice'])
+                bidQty = float(x['bidQty'])
+        page += f"<tr><td style=\"font-weight:bold\">{coin}</td><td>{row['capital']}</td><td>{row['starting']}</td>\
+            <td>{row['limit']}</td><td>{row['currentPrice']}</td><td>{row['autobought']}</td>\
+            <td>{row['takeprofit']}</td><td>{row['updatetime']}</td><td>{askPrice}</td>\
+            <td>{askQty}</td><td>{binPrice}</td><td>{bidQty}</td></tr>"
+    page += '</table>'
+
+    return page
+
+#graph the limit to etc here
+@app.route('/graphLimit')
+def limitGraph():
+    return "working"
+
+@app.route('/purchased')
+def purchased():
+    currentTick = 0
+    with open('tick', 'r') as f:
+        currentTick = f.read()
+    print(currentTick)
+    book = connector.candles.getBook()
+    page = "<style>\
+            table {\
+                font-size: .8em;\
+                font-family: arial, sans-serif;\
+                border-collapse: collapse;\
+                width: 300%;\
+            }\
+            td, th {\
+                width: 100px;\
+                border: 1px solid #dddddd;\
+                text-align: center;\
+                padding: 1px;\
+            }\
+            tr:nth-child(even) {\
+                background-color: #dddddd;\
+            }\
+            </style>"
+    df = connector.readConfig()
+    page += '<table style="width:60%">'
+    page += f'<tr style=\"height:50px\"><th> </th><th>capital</th><th>starting</th><th>limit</th>\
+    <th>currentPrice</th><th>position</th><th>takeprofit</th><th>updatetime</th><th>askPrice</th>\
+    <th>askQty</th><th>bidPrice</th><th>bidQty</th></tr>'
+    for coin, row in df.iterrows():
+        position = float(row['autobought'])
+        if position > 0:
+            askPrice = 0
+            askQty = 0
+            binPrice = 0
+            bidQty = 0
+            for x in book:
+                if coin == x['symbol']:
+                    askPrice = float(x['askPrice'])
+                    askQty = float(x['askQty'])
+                    binPrice = float(x['bidPrice'])
+                    bidQty = float(x['bidQty'])
+            page += f"<tr><td style=\"font-weight:bold\">{coin}</td><td>{row['capital']}</td><td>{row['starting']}</td>\
+                <td>{row['limit']}</td><td>{row['currentPrice']}</td><td>{row['autobought']}</td>\
+                <td>{row['takeprofit']}</td><td>{row['updatetime']}</td><td>{askPrice}</td>\
+                <td>{askQty}</td><td>{binPrice}</td><td>{bidQty}</td></tr>"
+    page += '</table>'
+
+    return page
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=11337, debug=True)

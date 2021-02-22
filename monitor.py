@@ -67,7 +67,6 @@ class CandleConnector():
         df = self.readConfig()
         df.at[coin, 'currentPrice'] = price
         df.at[coin, 'limit'] = limit
-
         self.setCoinConfigData(df)
 
     #sell an amount at current price
@@ -96,30 +95,37 @@ class CandleConnector():
             print(sellprice)
             self.saveCoinBuyData(coin, 0, 0, setcap=sellprice)
 
+    def echoCurrentTick(self):
+        with open('tick', 'w') as f:
+            f.write(f"{self.masterTicker}")
 
     def runForever(self):
         while 1:
             self.masterTicker += 10
             df = self.readConfig()
             # loop over the contents of our config file
-            for index, row in df.iterrows():
+            tickers = self.candles.getBook()
+            for coin, row in df.iterrows():
                 # check to see if the bot has made a purchase
                 position = float(row['autobought'])
                 if position > 0:
-                    currentPrice = self.getQuote(index)
+                    for x in tickers:
+                        if coin == x['symbol']:
+                            currentPrice = float(x['bidPrice'])
                     # if the bot has bought, check the update time
                     updatetime = int(row['updatetime'])
                     if self.masterTicker % updatetime == 0:
                         #get the current price and check if it's above our current limit
                         currentLimit = float(row['limit'])
                         if currentPrice < currentLimit:
-                            self.sellNow(index)
+                            self.sellNow(coin)
                         else:
                             # calculate a new limit based on our coin's config profile
                             newlimit = currentPrice*float(row['takeprofit'])
                             if newlimit > currentLimit:
-                                self.saveCoinLimitData(index, currentPrice, newlimit)
-                    self.logit(f"{row.starting}, {currentPrice}, {row.limit}", index)
+                                self.saveCoinLimitData(coin, currentPrice, newlimit)
+                    self.logit(f"{self.masterTicker}, {row.starting}, {currentPrice}, {row.limit}", coin)
+            self.echoCurrentTick()
             time.sleep(10)
 
 connector = CandleConnector()
