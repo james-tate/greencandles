@@ -70,6 +70,12 @@ class CandleConnector():
         df.at[coin, 'limit'] = limit
         self.setCoinConfigData(df)
 
+    def updateDelta(self, delta):
+        df = self.readConfig()
+        df.at[coin, 'delta'] = delta
+        self.setCoinConfigData(df)
+
+
     #sell an amount at current price
     def sellNow(self, coin):
         #get the amount the bot bought
@@ -115,7 +121,8 @@ class CandleConnector():
                             currentPrice = float(x['bidPrice'])
                     # if the bot has bought, check the update time
                     updatetime = int(row['updatetime'])
-                    if self.masterTicker % updatetime == 0:
+                    delta = self.masterTicker % updatetime
+                    if delta== 0:
                         #get the current price and check if it's above our current limit
                         currentLimit = float(row['limit'])
                         if currentPrice < currentLimit:
@@ -142,7 +149,7 @@ class CandleConnector():
                             stop=(row['starting'] + (row['starting'] * (2 * .0008))), 
                             limit=(row['starting'] + (row['starting'] * (2 * .00076))), 
                             position=position)['clientOrderId']
-
+                    self.updateDelta(delta)
                     self.logit(f"{self.masterTicker}, {row.starting}, {currentPrice}, {row.limit}", coin)
             self.echoCurrentTick()
             time.sleep(10)
