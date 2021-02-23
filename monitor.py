@@ -119,7 +119,7 @@ class CandleConnector():
                         #get the current price and check if it's above our current limit
                         currentLimit = float(row['limit'])
                         if currentPrice < currentLimit:
-                            if row['orderid'] != "0":
+                            if "none" not in row['orderid']:
                                 self.candles.cancelOrder(coin, row['orderid'])
                                 time.sleep(.3)
                             self.sellNow(coin)
@@ -130,7 +130,7 @@ class CandleConnector():
                                 self.saveCoinLimitData(coin, currentPrice, newlimit)
 
                     # check to see if a stop loss order has been placed
-                    if row['orderid'] != "0":
+                    if "none" not in row['orderid']:
                         status = self.candles.checkStatus(coin, row['orderid'])
                         if status == 'FILLED':
                             sellprice = float(status['fills'][0]['price']) * row['autobought']
