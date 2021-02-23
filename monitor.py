@@ -48,7 +48,7 @@ class CandleConnector():
 
     # write out to a log file
     def logit(self, message, destination):
-        with open(f"logdata/{destination}.txt", "a") as f:
+        with open(f"testData/{destination}.txt", "a") as f:
             f.write(message)
             f.write("\n")
 

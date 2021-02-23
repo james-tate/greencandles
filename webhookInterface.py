@@ -12,6 +12,7 @@ import plotly.graph_objects as go
 from filelock import Timeout, FileLock
 from datetime import datetime
 import os
+import pathlib
 
 app = Flask(__name__)
 
@@ -62,7 +63,7 @@ class CandleConnector():
 
     # write out to a log file
     def logit(self, message, destination):
-        with open(f"logdata/{destination}.txt", "a") as f:
+        with open(f"testData/{destination}.txt", "a") as f:
             f.write(message)
             f.write("\n")
 
@@ -111,7 +112,9 @@ class CandleConnector():
             self.saveCoinBuyData(coin, price, BOUGHT)
             self.logit(f"BUYING {order}", "logger")
             #reset our coin data so we can have a current graph
-            os.rename(f"testData/{coin}.txt", f"testData/{coin}{datetime.now()}.txt")
+            file = pathlib.Path(f"testData/{coin}.txt")
+            if file.exists ():
+                os.rename(f"testData/{coin}.txt", f"testData/{coin}{datetime.now()}.txt")
         else:
             BOUGHT = None
             self.logit(f"Failed to buy {BOUGHT}, {coin}. Due minNotional of {minNot}", "logger")
