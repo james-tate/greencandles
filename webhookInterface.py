@@ -85,8 +85,7 @@ class CandleConnector():
         avalFunds = self.getBuyPower()
         if (coinsCapital > avalFunds) is True:
             return 0
-
-        if float(self.getCoinConfigData(coin)['position']) > 0:
+        if float(self.getCoinConfigData(coin)['autobought']) > 0:
             return 0
 
         price = self.getQuote(coin)
@@ -110,7 +109,7 @@ class CandleConnector():
 
         #this needs to get the perciesion from the filter
 
-        BOUGHT = round(BOUGHT, int(self.getCoinInfo(coin)['quotePrecision']))
+        BOUGHT = round(BOUGHT, int(self.candles.getCoinInfo(coin)['quotePrecision']))
         print(BOUGHT)
         if (BOUGHT * price) > minNot:
             order = self.orderNumber(coin, BOUGHT)
@@ -233,7 +232,7 @@ def monitorView():
             <td>{row['capital']}</td><td>{row['starting']}</td>\
             <td>{row['limit']}</td><td>{row['currentPrice']}</td><td>{row['autobought']}</td>\
             <td>{row['takeprofit']}</td><td>{row['updatetime']}</td><td>{askPrice}</td>\
-            <td>{askQty}</td><td>{binPrice}</td><td>{bidQty}</td><td>{row['orderid']}</td></tr>"
+            <td>{askQty}</td><td>{binPrice}</td><td>{bidQty}</td><td>{row['currentPrice']}</td></tr>"
     page += '</table>'
     page += f'<script> var myVar = setInterval(myTimer, 1000); \
         function myTimer() {{ \
