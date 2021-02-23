@@ -27,7 +27,7 @@ class CandleConnector():
     def readConfig(self):
         self.lock.acquire()
         df = pd.read_csv(self.config,encoding='utf8', delimiter=',' , 
-            names=['coin', 'capital', 'starting', 'limit', 'currentPrice', 'autobought', 'takeprofit', 'updatetime'])
+            names=['coin', 'capital', 'starting', 'limit', 'currentPrice', 'autobought', 'takeprofit', 'updatetime', 'orderid'])
         self.lock.release()
         df.set_index('coin', inplace=True)
         return df
@@ -67,7 +67,7 @@ class CandleConnector():
             f.write(message)
             f.write("\n")
 
-    def saveCoinBuyData(self, coin, price, amount, setcap=None, setupdatetime=180):
+    def saveCoinBuyData(self, coin, price, amount, setcap=None, setupdatetime=180, order="0"):
         df = self.readConfig()
         if setcap is not None:
             df.at[coin, 'capital'] = setcap
@@ -75,6 +75,7 @@ class CandleConnector():
         df.at[coin, 'autobought'] = amount
         df.at[coin, 'limit'] = price * df.at[coin, 'takeprofit']
         df.at[coin, 'updatetime'] = setupdatetime
+        df.at[coin, 'orderid'] = order
         self.setCoinConfigData(df)
 
     # check to see how much can be purchased with the current capital
@@ -83,6 +84,9 @@ class CandleConnector():
         coinsCapital = self.getCoinConfigData(coin)['capital']
         avalFunds = self.getBuyPower()
         if (coinsCapital > avalFunds) is True:
+            return 0
+
+        if float(self.getCoinConfigData(coin)['position']) > 0:
             return 0
 
         price = self.getQuote(coin)
@@ -105,7 +109,8 @@ class CandleConnector():
             BOUGHT = BOUGHT - mod
 
         #this needs to get the perciesion from the filter
-        BOUGHT = round(BOUGHT, 8)
+
+        BOUGHT = round(BOUGHT, int(self.getCoinInfo(coin)['quotePrecision']))
         print(BOUGHT)
         if (BOUGHT * price) > minNot:
             order = self.orderNumber(coin, BOUGHT)

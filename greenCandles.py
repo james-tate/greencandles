@@ -93,8 +93,14 @@ class BinaceConnector():
 		upPrice = currentPrice * multiplierUp
 		downPrice = currentPrice * multiplierDown
 
-		stoper = round(stop, quotePrecision - 1)
-		limiter = round(limit, quotePrecision - 1)
+		stoper = round(stop, quotePrecision - 2)
+		limiter = round(limit, quotePrecision - 2)
+
+		print(f"up {upPrice}")
+		print(f"down {downPrice}")
+		print(f"stop {stoper}")
+		print(f"limit {limiter}")
+
 		if stoper > upPrice:
 			print("TOHIGH")
 			return None
@@ -129,7 +135,13 @@ class BinaceConnector():
 	def checkStatus(self, coin, order):
 		order = self.client.get_order(symbol=coin, origClientOrderId=order)
 		#add logic here for complete
+		return round(float(order['cummulativeQuoteQty']), 2)
+
+	def getSellAmount(self, coin, order):
+		order = self.client.get_order(symbol=coin, origClientOrderId=order)
+		#add logic here for complete
 		return order['status']
+
 
 	# cancel an order that might get hung
 	def cancelOrder(self, coin, order):

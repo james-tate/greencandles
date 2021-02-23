@@ -17,7 +17,7 @@ class CandleConnector():
 	def readConfig(self):
 		self.lock.acquire()
 		df = pd.read_csv(self.config,encoding='utf8', delimiter=',' , 
-			names=['coin', 'capital', 'starting', 'limit', 'currentPrice', 'autobought', 'takeprofit', 'updatetime'])
+			names=['coin', 'capital', 'starting', 'limit', 'currentPrice', 'autobought', 'takeprofit', 'updatetime', 'orderid'])
 		self.lock.release()
 		df.set_index('coin', inplace=True)
 		return df
@@ -154,9 +154,13 @@ else:
 	# bought = connector.buyNow(coin)
 	# print(bought)
 	# input("Press enter when ready to sell ") 
-	print(price)
-	print(connector.candles.stopLoss(coin, 
-		stop=(price + (price * (2 * .0008))), 
-		limit=(price + (price * (2 * .00075))), 
-		position=0.00638))
+	# print(price)
+	# print(connector.candles.stopLoss(coin, 
+	# 	stop=(price + (price * (2 * .0008))), 
+	# 	limit=(price + (price * (2 * .00075))), 
+	# 	position=0.00638))
 	# print(connector.sellNow(coin))
+	# connector.candles.stopLoss(coin, 
+	# 	stop=(price + (price * (2 * .0008))), 
+	# 	limit=(price + (price * (2 * .00075))), 
+	# 	position=0.00683)
