@@ -70,8 +70,9 @@ class CandleConnector():
         df.at[coin, 'limit'] = limit
         self.setCoinConfigData(df)
 
-    def updateDelta(self, delta):
+    def updateDelta(self, delta, price):
         df = self.readConfig()
+        df.at[coin, 'currentPrice'] = price
         df.at[coin, 'delta'] = delta
         self.setCoinConfigData(df)
 
@@ -149,7 +150,7 @@ class CandleConnector():
                             stop=(row['starting'] + (row['starting'] * (2 * .0008))), 
                             limit=(row['starting'] + (row['starting'] * (2 * .00076))), 
                             position=position)['clientOrderId']
-                    self.updateDelta(delta)
+                    self.updateDelta(delta, currentPrice)
                     self.logit(f"{self.masterTicker}, {row.starting}, {currentPrice}, {row.limit}", coin)
             self.echoCurrentTick()
             time.sleep(10)
