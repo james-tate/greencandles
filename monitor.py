@@ -19,7 +19,7 @@ class CandleConnector():
     def readConfig(self):
         self.lock.acquire()
         df = pd.read_csv(self.config,encoding='utf8', delimiter=',' , 
-            names=['coin', 'capital', 'starting', 'limit', 'currentPrice', 'autobought', 'takeprofit', 'updatetime', 'orderid'])
+            names=['coin', 'capital', 'starting', 'limit', 'currentPrice', 'autobought', 'takeprofit', 'updatetime', 'orderid', 'delta'])
         self.lock.release()
         df.set_index('coin', inplace=True)
         return df
@@ -119,6 +119,9 @@ class CandleConnector():
                         #get the current price and check if it's above our current limit
                         currentLimit = float(row['limit'])
                         if currentPrice < currentLimit:
+                            if row['orderid'] != "0":
+                                self.candles.cancelOrder(coin, row['orderid'])
+                                time.sleep(.3)
                             self.sellNow(coin)
                         else:
                             # calculate a new limit based on our coin's config profile
@@ -126,11 +129,13 @@ class CandleConnector():
                             if newlimit > currentLimit:
                                 self.saveCoinLimitData(coin, currentPrice, newlimit)
 
+                    # check to see if a stop loss order has been placed
                     if row['orderid'] != "0":
                         status = self.candles.checkStatus(coin, row['orderid'])
                         if status == 'FILLED':
                             sellprice = float(status['fills'][0]['price']) * row['autobought']
                             self.saveCoinBuyData(coin, 0, 0, setcap=sellprice)
+                    # if stop loss has not been placed, and we are in profit attempt to atleast cover our fees
                     elif currentPrice > row['starting'] + (float(row['starting']) * (2 * 0.001)):
                         #save this order and save to config
                         row['orderid'] = connector.candles.stopLoss(coin, 
@@ -138,7 +143,7 @@ class CandleConnector():
                             limit=(row['starting'] + (row['starting'] * (2 * .00076))), 
                             position=position)['clientOrderId']
 
-                    self.logit(f"{self.masterTicker}, {row['starting']}, {currentPrice}, {row.limit}", coin)
+                    self.logit(f"{self.masterTicker}, {row.starting}, {currentPrice}, {row.limit}", coin)
             self.echoCurrentTick()
             time.sleep(10)
 
