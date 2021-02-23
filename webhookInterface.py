@@ -217,7 +217,7 @@ def monitorView():
     page += '<table style="width:60%">'
     page += f'<tr style=\"height:50px\"><th> </th><th>capital</th><th>starting</th><th>limit</th>\
     <th>currentPrice</th><th>position</th><th>takeprofit</th><th>updatetime</th><th>askPrice</th>\
-    <th>askQty</th><th>bidPrice</th><th>bidQty</th></tr>'
+    <th>askQty</th><th>bidPrice</th><th>bidQty</th><th>orderid</th></tr>'
     for coin, row in df.iterrows():
         askPrice = 0
         askQty = 0
@@ -233,7 +233,7 @@ def monitorView():
             <td>{row['capital']}</td><td>{row['starting']}</td>\
             <td>{row['limit']}</td><td>{row['currentPrice']}</td><td>{row['autobought']}</td>\
             <td>{row['takeprofit']}</td><td>{row['updatetime']}</td><td>{askPrice}</td>\
-            <td>{askQty}</td><td>{binPrice}</td><td>{bidQty}</td></tr>"
+            <td>{askQty}</td><td>{binPrice}</td><td>{bidQty}</td><td>{row['orderid']}</td></tr>"
     page += '</table>'
     page += f'<script> var myVar = setInterval(myTimer, 1000); \
         function myTimer() {{ \
