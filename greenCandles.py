@@ -74,6 +74,10 @@ class BinaceConnector():
 	def sellMarket(self, coin, amount):
 		return self.client.order_market_sell(symbol=coin, quantity=amount)
 
+	# sell a coin at the current market value
+	def sellLimit(self, coin, amount, limit):
+		return self.client.order_limit_sell(symbol=coin, quantity=amount, price=limit)
+
 	# place a stoploss
 	def stopLoss(self, coin, stop, limit, position):
 		multiplierUp = 0

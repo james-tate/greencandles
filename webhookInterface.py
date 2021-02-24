@@ -27,7 +27,7 @@ class CandleConnector():
     def readConfig(self):
         self.lock.acquire()
         df = pd.read_csv(self.config,encoding='utf8', delimiter=',' , 
-            names=['coin', 'capital', 'starting', 'limit', 'currentPrice', 'autobought', 'takeprofit', 'updatetime', 'orderid', 'delta'])
+            names=['coin', 'currentcap', 'starting', 'limit', 'currentPrice', 'autobought', 'takeprofit', 'updatetime', 'orderid', 'takeProfitAmount', 'takeProfitOrder' 'delta'])
         self.lock.release()
         df.set_index('coin', inplace=True)
         return df
@@ -78,6 +78,13 @@ class CandleConnector():
         df.at[coin, 'orderid'] = order
         self.setCoinConfigData(df)
 
+    def saveCoinLimitBuyData(self, coin, price, amount, order):
+        df = self.readConfig()
+        df.at[coin, 'starting'] = price
+        df.at[coin, 'takeProfitAmount'] amount
+        df.at[coin, 'takeProfitOrder'] = order
+        self.setCoinConfigData(df)
+
     # check to see how much can be purchased with the current capital
     # then purchase that amount of coins
     def buyNow(self, coin, strat=None):
@@ -91,38 +98,84 @@ class CandleConnector():
         price = self.getQuote(coin)
         #TODO add logic that allows for multiple strategies that will 
         #allow for different allocations of the starting capital
-        BOUGHT = float(coinsCapital / self.getQuote(coin))
+        bought = float(coinsCapital / self.getQuote(coin))
         minOrder = None
         minNot = None   
-        print(BOUGHT)
+        print(bought)
         #grab the trading rules for the coin
         for filt in (self.candles.getCoinInfo(coin)['filters']):
             if filt['filterType'] == "LOT_SIZE":
                 minOrder = float(filt['minQty'])
             if filt['filterType'] == 'MIN_NOTIONAL':
                 minNot = float(filt['minNotional'])
-        mod = BOUGHT % minOrder
+        mod = bought % minOrder
 
         #make sure the amount we are buying is standardized for Binance
         if mod:
-            BOUGHT = BOUGHT - mod
+            bought = bought - mod
 
         #this needs to get the perciesion from the filter
 
-        BOUGHT = round(BOUGHT, int(self.candles.getCoinInfo(coin)['quotePrecision']))
-        print(BOUGHT)
-        if (BOUGHT * price) > minNot:
-            order = self.orderNumber(coin, BOUGHT)
-            self.saveCoinBuyData(coin, price, BOUGHT)
+        bought = round(bought, int(self.candles.getCoinInfo(coin)['quotePrecision']))
+        print(bought)
+        if (bought * price) > minNot:
+            order = self.orderNumber(coin, bought)
+            self.saveCoinBuyData(coin, price, bought)
             self.logit(f"BUYING {order}", "logger")
             #reset our coin data so we can have a current graph
             file = pathlib.Path(f"testData/{coin}.txt")
             if file.exists ():
                 os.rename(f"testData/{coin}.txt", f"testData/{coin}{datetime.now()}.txt")
         else:
-            BOUGHT = None
-            self.logit(f"Failed to buy {BOUGHT}, {coin}. Due minNotional of {minNot}", "logger")
-        return BOUGHT
+            bought = None
+            self.logit(f"Failed to buy {bought}, {coin}. Due minNotional of {minNot}", "logger")
+        return bought, price
+
+    # check to see how much can be purchased with the current capital
+    # then purchase that amount of coins
+    def buyForLimit(self, coin, strat=None):
+        #TODO seperate the capital out so we can run both at the same time
+        coinsCapital = self.getCoinConfigData(coin)['capital']
+        avalFunds = self.getBuyPower()
+        if (coinsCapital > avalFunds) is True:
+            return 0
+        if "none" not in self.getCoinConfigData(coin)['takeProfitOrder']:
+            return 0
+
+        price = self.getQuote(coin)
+        #TODO add logic that allows for multiple strategies that will 
+        #allow for different allocations of the starting capital
+        bought = float(coinsCapital / self.getQuote(coin))
+        minOrder = None
+        minNot = None   
+        print(bought)
+        #grab the trading rules for the coin
+        for filt in (self.candles.getCoinInfo(coin)['filters']):
+            if filt['filterType'] == "LOT_SIZE":
+                minOrder = float(filt['minQty'])
+            if filt['filterType'] == 'MIN_NOTIONAL':
+                minNot = float(filt['minNotional'])
+        mod = bought % minOrder
+
+        #make sure the amount we are buying is standardized for Binance
+        if mod:
+            bought = bought - mod
+
+        #this needs to get the perciesion from the filter
+        bought = round(bought, int(self.candles.getCoinInfo(coin)['quotePrecision']))
+        print(bought)
+        if (bought * price) > minNot:
+            order = self.orderNumber(coin, bought)
+            self.saveCoinLimitBuyData(coin, price, bought, order)
+            self.logit(f"BUYING {order}", "logger")
+            #reset our coin data so we can have a current graph
+            file = pathlib.Path(f"testData/{coin}.txt")
+            if file.exists ():
+                os.rename(f"testData/{coin}.txt", f"testData/{coin}{datetime.now()}.txt")
+        else:
+            bought = None
+            self.logit(f"Failed to buy {bought}, {coin}. Due minNotional of {minNot}", "logger")
+        return bought, price
 
     #sell an amount at current price
     def sellNow(self, coin):
@@ -150,13 +203,22 @@ class CandleConnector():
             print(sellprice)
             self.saveCoinBuyData(coin, 0, 0, setcap=sellprice)
 
-    def doit(self, coin, action):
+    def doMaxProfit(self, coin, action):
         self.logit(f"buysell {action}", "logger")
         self.logit(f"symbol {coin}", "logger")
         if action == 'sell':
             self.sellNow(coin)
         if action == 'buy':
             self.buyNow(coin)
+
+    def doTakeProfit(self, coin, action):
+        self.logit(f"buysell limit {action}", "logger")
+        self.logit(f"symbol limit {coin}", "logger")
+        if action == 'buy':
+            bought, price = self.buyForLimit(coin)
+            if bought:
+                limit = price * .01
+                limit_order = self.candles.sellLimit(coin, bought, limit)
 
 
 
@@ -167,18 +229,37 @@ connector = CandleConnector()
 def home():
     return "working"
 
-@app.route('/stratAccept', methods=['POST'])
+#this endpoint longer term strategies that try to maximize the gains
+@app.route('/setLimit', methods=['POST'])
 #message should be sent to this in JSON format
 # example:
 #       {"symbol": "ETHUSD", "action": "sell"}
-def stratAccept():
+def setLimit():
     try:
         incoming = request.json
         print(incoming)
         symbol = incoming['symbol']
         action = incoming['action']
         print(symbol)
-        connector.doit(symbol, action)
+        connector.doMaxProfit(symbol, action)
+        return ""
+    except Exception as e:
+        print(e)
+        return ""
+
+#this endpoint sets a take profit limit used for shorter,smaller, and more frequent trades.
+@app.route('/takeProfit', methods=['POST'])
+#message should be sent to this in JSON format
+# example:
+#       {"symbol": "ETHUSD", "action": "sell"}
+def takeProfit():
+    try:
+        incoming = request.json
+        print(incoming)
+        symbol = incoming['symbol']
+        action = incoming['action']
+        print(symbol)
+        connector.doTakeProfit(symbol, action)
         return ""
     except Exception as e:
         print(e)
@@ -216,7 +297,8 @@ def monitorView():
     page += '<table style="width:60%">'
     page += f'<tr style=\"height:50px\"><th> </th><th>capital</th><th>starting</th><th>limit</th>\
     <th>currentPrice</th><th>position</th><th>takeprofit</th><th>updatetime</th><th>delta</th><th>askPrice</th>\
-    <th>askQty</th><th>bidPrice</th><th>bidQty</th><th>orderid</th></tr>'
+    <th>askQty</th><th>bidPrice</th><th>bidQty</th><th>orderid</th><th>takeProfitOrder</th><th>takeProfitAmount</th></tr>'
+
     for coin, row in df.iterrows():
         askPrice = 0
         askQty = 0
@@ -232,7 +314,7 @@ def monitorView():
             <td>{row['capital']}</td><td>{row['starting']}</td>\
             <td>{row['limit']}</td><td>{row['currentPrice']}</td><td>{row['autobought']}</td>\
             <td>{row['takeprofit']}</td><td>{row['updatetime']}</td><td>{row['delta']}</td><td>{askPrice}</td>\
-            <td>{askQty}</td><td>{binPrice}</td><td>{bidQty}</td><td>{row['orderid']}</td></tr>"
+            <td>{askQty}</td><td>{binPrice}</td><td>{bidQty}</td><td>{row['orderid']}</td><td>{row['takeProfitOrder']}</td><td>{row['takeProfitAmount']}</td></tr>"
     page += '</table>'
     page += f'<script> var myVar = setInterval(myTimer, 1000); \
         function myTimer() {{ \

@@ -19,7 +19,7 @@ class CandleConnector():
     def readConfig(self):
         self.lock.acquire()
         df = pd.read_csv(self.config,encoding='utf8', delimiter=',' , 
-            names=['coin', 'capital', 'starting', 'limit', 'currentPrice', 'autobought', 'takeprofit', 'updatetime', 'orderid', 'delta'])
+            names=['coin', 'currentcap', 'starting', 'limit', 'currentPrice', 'autobought', 'takeprofit', 'updatetime', 'orderid', 'takeProfitAmount', 'takeProfitOrder' 'delta'])
         self.lock.release()
         df.set_index('coin', inplace=True)
         return df
