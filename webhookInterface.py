@@ -27,7 +27,7 @@ class CandleConnector():
     def readConfig(self):
         self.lock.acquire()
         df = pd.read_csv(self.config,encoding='utf8', delimiter=',' , 
-            names=['coin', 'currentcap', 'starting', 'limit', 'currentPrice', 'autobought', 'takeprofit', 'updatetime', 'orderid', 'takeProfitAmount', 'takeProfitOrder' 'delta'])
+            names=['coin', 'capital', 'starting', 'limit', 'currentPrice', 'autobought', 'takeprofit', 'updatetime', 'orderid', 'takeProfitAmount', 'takeProfitOrder' 'delta'])
         self.lock.release()
         df.set_index('coin', inplace=True)
         return df
@@ -81,7 +81,7 @@ class CandleConnector():
     def saveCoinLimitBuyData(self, coin, price, amount, order):
         df = self.readConfig()
         df.at[coin, 'starting'] = price
-        df.at[coin, 'takeProfitAmount'] amount
+        df.at[coin, 'takeProfitAmount'] = amount
         df.at[coin, 'takeProfitOrder'] = order
         self.setCoinConfigData(df)
 

@@ -54,10 +54,9 @@ coinCaps = [
 ['ZILUSD', 12.0, 0.0, 0.0, 0.0, 0.0, .999, 180, "none", 0.0, "none", 0],
 ['ZRXUSD', 12.0, 0.0, 0.0, 0.0, 0.0, .999, 180, "none", 0.0, "none", 0]
 ]
-
 # for x in coinCaps:
 # 	df.append(coinCaps)
-df = pd.DataFrame(coinCaps, columns = ['coin', 'currentcap', 'starting', 'limit', 'currentPrice', 'autobought', 'takeprofit', 'updatetime', 'orderid', 'takeProfitAmount', 'takeProfitOrder' 'delta'])
+df = pd.DataFrame(coinCaps, columns = ['coin', 'capital', 'starting', 'limit', 'currentPrice', 'autobought', 'takeprofit', 'updatetime', 'orderid', 'takeProfitAmount', 'takeProfitOrder', 'delta'])
 df.set_index('coin', inplace=True)
 df.to_csv(f'config.csv', mode='w', header=False, index=True)
 	
