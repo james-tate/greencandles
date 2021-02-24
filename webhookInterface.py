@@ -137,10 +137,13 @@ class CandleConnector():
         #TODO seperate the capital out so we can run both at the same time
         coinsCapital = self.getCoinConfigData(coin)['capital']
         avalFunds = self.getBuyPower()
+        prevoiusID = self.getCoinConfigData(coin)['takeProfitOrder']
         if (coinsCapital > avalFunds) is True:
             return 0
         if "none" not in self.getCoinConfigData(coin)['takeProfitOrder']:
-            return 0
+            status = self.candles.checkStatus(coin, orderID)
+            if 'FILLED' not in status:
+                return 0
 
         price = self.getQuote(coin)
         #TODO add logic that allows for multiple strategies that will 
@@ -171,10 +174,11 @@ class CandleConnector():
             file = pathlib.Path(f"testData/{coin}.txt")
             if file.exists ():
                 os.rename(f"testData/{coin}.txt", f"testData/{coin}{datetime.now()}.txt")
+            return order
         else:
             bought = None
             self.logit(f"Failed to buy {bought}, {coin}. Due minNotional of {minNot}", "logger")
-        return bought, price
+        return None
 
     #sell an amount at current price
     def sellNow(self, coin):
@@ -213,15 +217,17 @@ class CandleConnector():
     def doTakeProfit(self, coin, action):
         self.logit(f"buysell limit {action}", "logger")
         self.logit(f"symbol limit {coin}", "logger")
+        #test here to see if previous order has been filled
         if action == 'buy':
-            bought, price = self.buyForLimit(coin)
-            if bought:
+            order = self.buyForLimit(coin)
+            time.sleep(.5)
+            if order is not None:
+                price = float(order['fills'][0]['price'])
                 limit = price * 1.01
+                amount = float(order['fills'][0]['qty'])
 
-                limit_order = self.candles.sellLimit(coin, bought, limit)
-                self.saveCoinLimitBuyData(coin, price, bought, limit_order)
-
-
+                limit_order = self.candles.sellLimit(coin, amount, limit)
+                self.saveCoinLimitBuyData(coin, limit, amount, limit_order['clientOrderId'])
 
 # =========================================================================
 connector = CandleConnector()
