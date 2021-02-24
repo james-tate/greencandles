@@ -87,7 +87,7 @@ class CandleConnector():
 
     # check to see how much can be purchased with the current capital
     # then purchase that amount of coins
-    def buyNow(self, coin, strat=None):
+    def buyForProfit(self, coin, strat=None):
         coinsCapital = self.getCoinConfigData(coin)['capital']
         avalFunds = self.getBuyPower()
         if (coinsCapital > avalFunds) is True:
@@ -141,9 +141,11 @@ class CandleConnector():
         print(avalFunds)
         print(coinsCapital)
         if (coinsCapital > avalFunds):
+            print("no money")
             return None
         #test here to see if previous order has been filled
         if "none" not in self.getCoinConfigData(coin)['takeProfitOrder']:
+            print("previous order")
             status = self.candles.checkStatus(coin, orderID)
             if 'FILLED' not in status:
                 return None
@@ -187,22 +189,19 @@ class CandleConnector():
     def sellNow(self, coin):
         #get the amount the bot bought
         amount = self.getAutoBoughtAmount(coin)
+        print(f"we have {amount}")
         if amount > 0:
+            print(f"selling")
+            #NEED TO CHECK TO SEE IF WE CURRNTLY HAVE AN ORDER
+            orderID = self.getCoinConfigData(coin)['orderid']
+            print(f"prvious order {orderID}")
+            if "none" not in orderid:
+                print("cancelOrder")
+                self.candles.cancelOrder(coin, orderid)
+                time.sleep(.3)
             # self.candles.testOrder(coin, SIDE_SELL, amount)
             sellorder = self.candles.sellMarket(coin, amount)
             orderID = sellorder['clientOrderId']
-            status = self.candles.checkStatus(coin, orderID)
-            timeout = 5
-            time.sleep(2)
-            #check a couple of times to make sure we are selling
-            while status != 'FILLED':
-                if timeout > 5:
-                    timeout = 0
-                    self.candles.cancelOrder(coin, orderID)
-                status = self.candles.checkStatus(coin, orderID)
-                timeout += 1
-                time.sleep(2)
-
             # save the data for analysis later and reset the bot coin's config
             self.logit(f"SELLING DUE TO STRAT {sellorder}", "logger")
             sellprice = float(sellorder['fills'][0]['price']) * amount
@@ -215,7 +214,7 @@ class CandleConnector():
         if action == 'sell':
             self.sellNow(coin)
         if action == 'buy':
-            self.buyNow(coin)
+            self.buyForProfit(coin)
 
     def doTakeProfit(self, coin, action):
         self.logit(f"buysell limit {action}", "logger")

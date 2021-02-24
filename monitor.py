@@ -86,13 +86,14 @@ class CandleConnector():
     def sellNow(self, coin):
         #get the amount the bot bought
         amount = self.getAutoBoughtAmount(coin)
+        print(f"found {amount}")
         if amount > 0:
-            # self.candles.testOrder(coin, SIDE_SELL, amount)
+            print(f"selling")
             sellorder = self.candles.sellMarket(coin, amount)
-            orderID = sellorder['clientOrderId']
-            status = self.candles.checkStatus(coin, orderID)
+            time.sleep(1)
             # save the data for analysis later and reset the bot coin's config
             self.logit(f"SELLING DUE TO TAKEPROFIT {sellorder}", "logger")
+            #need to check to make sure we did sell before we save this
             sellprice = float(sellorder['fills'][0]['price']) * amount
             print(sellprice)
             self.saveCoinBuyData(coin, 0, 0, setcap=sellprice)
@@ -121,24 +122,33 @@ class CandleConnector():
                         #get the current price and check if it's above our current limit
                         currentLimit = float(row['limit'])
                         if currentPrice < currentLimit:
+                            print("checking order")
                             if "none" not in row['orderid']:
+                                print("cancelOrder")
                                 self.candles.cancelOrder(coin, row['orderid'])
                                 time.sleep(.3)
+                            print(f"selling because price {currentPrice} < limit {currentLimit}")
                             self.sellNow(coin)
                         else:
                             # calculate a new limit based on our coin's config profile
                             newlimit = currentPrice*float(row['takeprofit'])
+                            print(f"new limit {newlimit}")
                             if newlimit > currentLimit:
+                                print(f"new limit > {currentLimit}")
                                 self.saveCoinLimitData(coin, currentPrice, newlimit)
 
                     # check to see if a stop loss order has been placed
                     if "none" not in row['orderid']:
+                        print("order {row['orderid']} is", end = " ")
                         status = self.candles.checkStatus(coin, row['orderid'])
                         if status == 'FILLED':
+                            print("FILLED so close")
                             sellprice = float(status['fills'][0]['price']) * row['autobought']
                             self.saveCoinBuyData(coin, 0, 0, setcap=sellprice)
+                        print("open")
                     # if stop loss has not been placed, and we are in profit attempt to atleast cover our fees
                     elif currentPrice > row['starting'] + (float(row['starting']) * (2 * 0.001)):
+                        print("made our money back placing limit order")
                         #save this order and save to config
                         order = connector.candles.stopLoss(coin, 
                             stop=(row['starting'] + (row['starting'] * (2 * .0008))), 
