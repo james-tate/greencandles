@@ -216,8 +216,8 @@ class CandleConnector():
         if action == 'buy':
             bought, price = self.buyForLimit(coin)
             if bought:
-                limit = price * .01
-                
+                limit = price * 1.01
+
                 limit_order = self.candles.sellLimit(coin, bought, limit)
                 self.saveCoinLimitBuyData(coin, price, bought, limit_order)
 
