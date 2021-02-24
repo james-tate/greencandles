@@ -166,7 +166,6 @@ class CandleConnector():
         print(bought)
         if (bought * price) > minNot:
             order = self.orderNumber(coin, bought)
-            self.saveCoinLimitBuyData(coin, price, bought, order)
             self.logit(f"BUYING {order}", "logger")
             #reset our coin data so we can have a current graph
             file = pathlib.Path(f"testData/{coin}.txt")
@@ -218,7 +217,9 @@ class CandleConnector():
             bought, price = self.buyForLimit(coin)
             if bought:
                 limit = price * .01
+                
                 limit_order = self.candles.sellLimit(coin, bought, limit)
+                self.saveCoinLimitBuyData(coin, price, bought, limit_order)
 
 
 

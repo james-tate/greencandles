@@ -76,6 +76,9 @@ class BinaceConnector():
 
 	# sell a coin at the current market value
 	def sellLimit(self, coin, amount, limit):
+		info = self.getCoinInfo(coin)
+		quotePrecision = int(info['quotePrecision'])
+		limit = round(limit, quotePrecision - 2)
 		return self.client.order_limit_sell(symbol=coin, quantity=amount, price=limit)
 
 	# place a stoploss
