@@ -67,7 +67,7 @@ class CandleConnector():
             f.write(message)
             f.write("\n")
 
-    def saveCoinBuyData(self, coin, price, amount, setcap=None, setupdatetime=180, order="0"):
+    def saveCoinBuyData(self, coin, price, amount, setcap=None, setupdatetime=180, order="none"):
         df = self.readConfig()
         if setcap is not None:
             df.at[coin, 'capital'] = setcap
@@ -191,7 +191,7 @@ def monitorView():
     with open('tick', 'r') as f:
         currentTick = f.read()
     book = connector.candles.getBook()
-    page = "<!DOCTYPE html> <html> <meta http-equiv=\"refresh\" content=\"10\" /><body>"
+    page = "<!DOCTYPE html> <html> <meta http-equiv=\"refresh\" content=\"60\" /><body>"
     page += "<style>\
             table {\
                 font-size: .8em;\

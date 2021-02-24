@@ -52,7 +52,7 @@ class CandleConnector():
             f.write(message)
             f.write("\n")
 
-    def saveCoinBuyData(self, coin, price, amount, setcap=0.0, setupdatetime=180, order="0"):
+    def saveCoinBuyData(self, coin, price, amount, setcap=0.0, setupdatetime=180, order="none"):
         df = self.readConfig()
         if setcap > 0:
             df.at[coin, 'capital'] = setcap
@@ -70,10 +70,15 @@ class CandleConnector():
         df.at[coin, 'limit'] = limit
         self.setCoinConfigData(df)
 
-    def updateDelta(self, delta, price):
+    def updateDelta(self, coin, delta, price):
         df = self.readConfig()
         df.at[coin, 'currentPrice'] = price
         df.at[coin, 'delta'] = delta
+        self.setCoinConfigData(df)
+
+    def updateOrder(self, coin, order):
+        df = self.readConfig()
+        df.at[coin, 'orderid'] = order
         self.setCoinConfigData(df)
 
 
@@ -86,17 +91,6 @@ class CandleConnector():
             sellorder = self.candles.sellMarket(coin, amount)
             orderID = sellorder['clientOrderId']
             status = self.candles.checkStatus(coin, orderID)
-            timeout = 5
-            time.sleep(2)
-            #check a couple of times to make sure we are selling
-            while status != 'FILLED':
-                if timeout > 5:
-                    timeout = 0
-                    self.candles.cancelOrder(coin, orderID)
-                status = self.candles.checkStatus(coin, orderID)
-                timeout += 1
-                time.sleep(2)
-
             # save the data for analysis later and reset the bot coin's config
             self.logit(f"SELLING DUE TO TAKEPROFIT {sellorder}", "logger")
             sellprice = float(sellorder['fills'][0]['price']) * amount
@@ -109,7 +103,7 @@ class CandleConnector():
 
     def runForever(self):
         while 1:
-            self.masterTicker += 10
+            self.masterTicker += 60
             df = self.readConfig()
             # loop over the contents of our config file
             tickers = self.candles.getBook()
@@ -146,14 +140,16 @@ class CandleConnector():
                     # if stop loss has not been placed, and we are in profit attempt to atleast cover our fees
                     elif currentPrice > row['starting'] + (float(row['starting']) * (2 * 0.001)):
                         #save this order and save to config
-                        row['orderid'] = connector.candles.stopLoss(coin, 
+                        order = connector.candles.stopLoss(coin, 
                             stop=(row['starting'] + (row['starting'] * (2 * .0008))), 
                             limit=(row['starting'] + (row['starting'] * (2 * .00076))), 
                             position=position)['clientOrderId']
-                    self.updateDelta(delta, currentPrice)
+
+
+                    self.updateDelta(coin, delta, currentPrice)
                     self.logit(f"{self.masterTicker}, {row.starting}, {currentPrice}, {row.limit}", coin)
             self.echoCurrentTick()
-            time.sleep(10)
+            time.sleep(60)
 
 connector = CandleConnector()
 
