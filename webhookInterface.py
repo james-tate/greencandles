@@ -27,7 +27,7 @@ class CandleConnector():
     def readConfig(self):
         self.lock.acquire()
         df = pd.read_csv(self.config,encoding='utf8', delimiter=',' , 
-            names=['coin', 'capital', 'starting', 'limit', 'currentPrice', 'autobought', 'takeprofit', 'updatetime', 'orderid', 'takeProfitAmount', 'takeProfitOrder' 'delta'])
+            names=['coin', 'capital', 'starting', 'limit', 'currentPrice', 'autobought', 'takeprofit', 'updatetime', 'orderid', 'takeProfitAmount', 'takeProfitOrder', 'delta'])
         self.lock.release()
         df.set_index('coin', inplace=True)
         return df
@@ -230,11 +230,11 @@ def home():
     return "working"
 
 #this endpoint longer term strategies that try to maximize the gains
-@app.route('/setLimit', methods=['POST'])
+@app.route('/maxProfit', methods=['POST'])
 #message should be sent to this in JSON format
 # example:
 #       {"symbol": "ETHUSD", "action": "sell"}
-def setLimit():
+def maxProfit():
     try:
         incoming = request.json
         print(incoming)

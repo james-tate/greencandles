@@ -14,7 +14,7 @@ class CandleConnector():
         # make dict here that stores the amount for each coin
         self.config = "config.csv"
         self.candles = candles.BinaceConnector()
-        self.masterTicker = 0
+        self.masterTicker = -60
 
     def readConfig(self):
         self.lock.acquire()
