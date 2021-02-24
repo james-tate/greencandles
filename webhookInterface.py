@@ -139,11 +139,12 @@ class CandleConnector():
         avalFunds = self.getBuyPower()
         prevoiusID = self.getCoinConfigData(coin)['takeProfitOrder']
         if (coinsCapital > avalFunds) is True:
-            return 0
+            return None
+        #test here to see if previous order has been filled
         if "none" not in self.getCoinConfigData(coin)['takeProfitOrder']:
             status = self.candles.checkStatus(coin, orderID)
             if 'FILLED' not in status:
-                return 0
+                return None
 
         price = self.getQuote(coin)
         #TODO add logic that allows for multiple strategies that will 
@@ -217,7 +218,6 @@ class CandleConnector():
     def doTakeProfit(self, coin, action):
         self.logit(f"buysell limit {action}", "logger")
         self.logit(f"symbol limit {coin}", "logger")
-        #test here to see if previous order has been filled
         if action == 'buy':
             order = self.buyForLimit(coin)
             time.sleep(.5)
@@ -225,7 +225,6 @@ class CandleConnector():
                 price = float(order['fills'][0]['price'])
                 limit = price * 1.01
                 amount = float(order['fills'][0]['qty'])
-
                 limit_order = self.candles.sellLimit(coin, amount, limit)
                 self.saveCoinLimitBuyData(coin, limit, amount, limit_order['clientOrderId'])
 
