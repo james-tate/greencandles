@@ -228,7 +228,7 @@ class CandleConnector():
                 limit = price * 1.01
                 amount = float(order['fills'][0]['qty'])
                 limit_order = self.candles.sellLimit(coin, amount, limit)
-                self.saveCoinLimitBuyData(coin, limit, amount, limit_order['clientOrderId'])
+                self.saveCoinLimitBuyData(coin, price, limit, limit_order['clientOrderId'])
 
 # =========================================================================
 connector = CandleConnector()
