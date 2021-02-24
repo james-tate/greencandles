@@ -135,10 +135,12 @@ class CandleConnector():
     # then purchase that amount of coins
     def buyForLimit(self, coin, strat=None):
         #TODO seperate the capital out so we can run both at the same time
-        coinsCapital = self.getCoinConfigData(coin)['capital']
+        coinsCapital = float(self.getCoinConfigData(coin)['capital'])
         avalFunds = self.getBuyPower()
         prevoiusID = self.getCoinConfigData(coin)['takeProfitOrder']
-        if (coinsCapital > avalFunds) is True:
+        print(avalFunds)
+        print(coinsCapital)
+        if (coinsCapital > avalFunds):
             return None
         #test here to see if previous order has been filled
         if "none" not in self.getCoinConfigData(coin)['takeProfitOrder']:
