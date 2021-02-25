@@ -73,7 +73,7 @@ class CandleConnector():
     def updateDelta(self, coin, delta, price):
         df = self.readConfig()
         df.at[coin, 'currentPrice'] = price
-        df.at[coin, 'delta'] = delta
+        df.at[coin, 'delta'] = delta -180
         self.setCoinConfigData(df)
 
     def updateOrder(self, coin, order):
@@ -116,6 +116,7 @@ class CandleConnector():
                         if coin == x['symbol']:
                             currentPrice = float(x['bidPrice'])
                     # if the bot has bought, check the update time
+                    currentOrder = row['orderid']
                     updatetime = int(row['updatetime'])
                     delta = self.masterTicker % updatetime
                     if delta== 0:
@@ -123,12 +124,16 @@ class CandleConnector():
                         currentLimit = float(row['limit'])
                         if currentPrice < currentLimit:
                             print("checking order")
-                            if "none" not in row['orderid']:
+                            if "none" not in currentOrder:
                                 print("cancelOrder")
-                                self.candles.cancelOrder(coin, row['orderid'])
-                                time.sleep(.3)
-                            print(f"selling because price {currentPrice} < limit {currentLimit}")
-                            self.sellNow(coin)
+                                status = self.candles.checkStatus(coin, currentOrder)
+                                if status != 'FILLED':
+                                    self.candles.cancelOrder(coin, currentOrder)
+                                    time.sleep(.3)
+                                    print(f"selling because price {currentPrice} < limit {currentLimit}")
+                                    self.sellNow(coin)
+                            else:
+                                self.sellNow(coin)
                         else:
                             # calculate a new limit based on our coin's config profile
                             newlimit = currentPrice*float(row['takeprofit'])
@@ -138,23 +143,24 @@ class CandleConnector():
                                 self.saveCoinLimitData(coin, currentPrice, newlimit)
 
                     # check to see if a stop loss order has been placed
-                    if "none" not in row['orderid']:
-                        print("order {row['orderid']} is", end = " ")
-                        status = self.candles.checkStatus(coin, row['orderid'])
+                    if "none" not in currentOrder:
+                        print(f"order {currentOrder} is", end = " ")
+                        status = self.candles.checkStatus(coin, currentOrder)
                         if status == 'FILLED':
                             print("FILLED so close")
                             sellprice = float(status['fills'][0]['price']) * row['autobought']
                             self.saveCoinBuyData(coin, 0, 0, setcap=sellprice)
                         print("open")
                     # if stop loss has not been placed, and we are in profit attempt to atleast cover our fees
-                    elif currentPrice > row['starting'] + (float(row['starting']) * (2 * 0.001)):
+                    starting = float(row['starting'])
+                    elif currentPrice > starting + (starting * 0.005):
                         print("made our money back placing limit order")
-                        #save this order and save to config
+                        #save this order and save to config`
                         order = connector.candles.stopLoss(coin, 
-                            stop=(row['starting'] + (row['starting'] * (2 * .0008))), 
-                            limit=(row['starting'] + (row['starting'] * (2 * .00076))), 
+                            stop=(starting + (starting * (2 * .0008))), 
+                            limit=(starting + (starting * (2 * .00076))), 
                             position=position)['clientOrderId']
-
+                        self.updateOrder(coin, order)
 
                     self.updateDelta(coin, delta, currentPrice)
                     self.logit(f"{self.masterTicker}, {row.starting}, {currentPrice}, {row.limit}", coin)
