@@ -300,6 +300,7 @@ def monitorView():
     page += '<p id="currentTime"></p>'
     page += '<p id="update"></p>'
     df = connector.readConfig()
+    page += '<div id="here">'
     page += f'<h3>CURRENT TICK {currentTick}</h3>'
     page += '<table style="width:60%">'
     page += f'<tr style=\"height:50px\"><th> </th><th>capital</th><th>starting</th><th>limit</th>\
@@ -323,6 +324,14 @@ def monitorView():
             <td>{row['takeprofit']}</td><td>{row['updatetime']}</td><td>{row['delta']}</td><td>{askPrice}</td>\
             <td>{askQty}</td><td>{binPrice}</td><td>{bidQty}</td><td>{row['orderid']}</td><td>{row['takeProfitOrder']}</td><td>{row['takeProfitAmount']}</td></tr>"
     page += '</table>'
+    page += '</dev>'
+    page += '<script> \
+            $(document).ready(function(){\
+            setInterval(function(){\
+                  $("#here").load(window.location.href + " #here" );\
+            }, 3000);\
+            });\
+            </script>'
     page += f'<script> var myVar = setInterval(myTimer, 1000); \
         function myTimer() {{ \
             var d = new Date();\
