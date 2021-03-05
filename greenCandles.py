@@ -139,12 +139,13 @@ class BinaceConnector():
 			quantity=amount))
 
 	# check the status of an order
-	def checkStatus(self, coin, order):
+	def getSellAmount(self, coin, order):
 		order = self.client.get_order(symbol=coin, origClientOrderId=order)
 		#add logic here for complete
 		return round(float(order['cummulativeQuoteQty']), 2)
+		
 
-	def getSellAmount(self, coin, order):
+	def checkStatus(self, coin, order):
 		order = self.client.get_order(symbol=coin, origClientOrderId=order)
 		#add logic here for complete
 		return order['status']
@@ -156,3 +157,6 @@ class BinaceConnector():
 
 	def getBook(self):
 		return self.client.get_orderbook_tickers()
+
+	def getAssets(self):
+		return self.client.get_account()

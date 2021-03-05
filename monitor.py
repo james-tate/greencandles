@@ -142,6 +142,7 @@ class CandleConnector():
                                 print(f"new limit > {currentLimit}")
                                 self.saveCoinLimitData(coin, currentPrice, newlimit)
 
+                    starting = float(row['starting'])
                     # check to see if a stop loss order has been placed
                     if "none" not in currentOrder:
                         print(f"order {currentOrder} is", end = " ")
@@ -152,7 +153,6 @@ class CandleConnector():
                             self.saveCoinBuyData(coin, 0, 0, setcap=sellprice)
                         print("open")
                     # if stop loss has not been placed, and we are in profit attempt to atleast cover our fees
-                    starting = float(row['starting'])
                     elif currentPrice > starting + (starting * 0.005):
                         print("made our money back placing limit order")
                         #save this order and save to config`

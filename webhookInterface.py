@@ -90,7 +90,8 @@ class CandleConnector():
     def buyForProfit(self, coin, strat=None):
         coinsCapital = self.getCoinConfigData(coin)['capital']
         avalFunds = self.getBuyPower()
-        if (coinsCapital > avalFunds) is True:
+        print(f"capital {coinsCapital} above funds {avalFunds} is {coinsCapital > avalFunds}")
+        if (coinsCapital > avalFunds):
             return 0
         if float(self.getCoinConfigData(coin)['autobought']) > 0:
             return 0
@@ -144,11 +145,17 @@ class CandleConnector():
             print("no money")
             return None
         #test here to see if previous order has been filled
-        if "none" not in self.getCoinConfigData(coin)['takeProfitOrder']:
+        previousOrder = self.getCoinConfigData(coin)['takeProfitOrder']
+        print(f"Prevoius {previousOrder}")
+        if previousOrder != "none":
             print("previous order")
-            status = self.candles.checkStatus(coin, orderID)
-            if 'FILLED' not in status:
+            status = self.candles.checkStatus(coin, previousOrder)
+            #if previous status has been filled. We need to save the winnings to new capital
+            print(f"status {status}")
+            if 'FILLED' != status:
+                print("previous has not filled yet")
                 return None
+            print("previous has been filled so let's buy more")
 
         price = self.getQuote(coin)
         #TODO add logic that allows for multiple strategies that will 
@@ -194,7 +201,7 @@ class CandleConnector():
             print(f"selling")
             #NEED TO CHECK TO SEE IF WE CURRNTLY HAVE AN ORDER
             orderID = self.getCoinConfigData(coin)['orderid']
-            print(f"prvious order {orderID}")
+            print(f"previous order {orderID}")
             if "none" not in orderid:
                 print("cancelOrder")
                 self.candles.cancelOrder(coin, orderid)
