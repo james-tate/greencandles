@@ -245,7 +245,7 @@ class CandleConnector():
                 print(f"status {status}")
                 if 'FILLED' != status:
                     print("previous has not filled yet so we gonna cancel")
-                    self.candles.cancelOrder(coin, currentOrder)
+                    self.candles.cancelOrder(coin, previousOrder)
                     time.sleep(.3)
                     self.sellNow(coin)
                     return None

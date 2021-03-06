@@ -4,6 +4,7 @@ from binance.client import Client
 from binance.enums import *
 import time
 from binance.websockets import BinanceSocketManager
+from binance.depthcache import DepthCacheManager
 import pandas as pd
 import sys
 sys.path.append('../')
@@ -15,6 +16,28 @@ from filelock import Timeout, FileLock
 class BinaceConnector():
 	def __init__(self):
 		self.client = Client(clientConfig.api_key, clientConfig.api_secret, tld='us')
+		self.wsclient = None
+
+	# setup a websocket client
+	def setupWebsocket(self):
+		self.wsclient = BinanceSocketManager(self.client)
+		return self.wsclient
+
+	# get a feed in real time for all prices
+	def startAllBookTicker(self, callback):
+		return self.client.start_book_ticker_socket(callback)
+
+	# setup depth manager
+	def setupDepthCacheManager(self, coin, callback, limit=10):
+		return DepthCacheManager(self.client, coin, callback)
+
+	# setup multiple cache managers:
+	def setupDepthForSymbolsUSDT(self, symbols, callback):
+		manager = self.setupWebsocket()
+		streams = []
+		for coin in symbols:
+			streams.append(DepthCacheManager(self.client, coin + "USDT", callback, bm=manager))
+		return streams
 
 	# return the current coin price
 	def getCoinPrice(self, coin):
