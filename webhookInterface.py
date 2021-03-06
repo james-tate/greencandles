@@ -226,6 +226,7 @@ class CandleConnector():
     def doTakeProfit(self, coin, action):
         self.logit(f"buysell limit {action}", "logger")
         self.logit(f"symbol limit {coin}", "logger")
+        #add sell logic
         if action == 'buy':
             order = self.buyForLimit(coin)
             time.sleep(.5)
@@ -235,6 +236,21 @@ class CandleConnector():
                 amount = float(order['fills'][0]['qty'])
                 limit_order = self.candles.sellLimit(coin, amount, limit)
                 self.saveCoinLimitBuyData(coin, price, limit, limit_order['clientOrderId'])
+        elif action == 'sell':
+            previousOrder = self.getCoinConfigData(coin)['takeProfitOrder']
+            if previousOrder != "none":
+                print("previous order")
+                status = self.candles.checkStatus(coin, previousOrder)
+                #if previous status has been filled. We need to save the winnings to new capital
+                print(f"status {status}")
+                if 'FILLED' != status:
+                    print("previous has not filled yet so we gonna cancel")
+                    self.candles.cancelOrder(coin, currentOrder)
+                    time.sleep(.3)
+                    self.sellNow(coin)
+                    return None
+                print("previous has been filled so nothing to do")
+
 
 # =========================================================================
 connector = CandleConnector()
