@@ -1,0 +1,23 @@
+<html>
+<head>
+</head>
+<body>
+    <h1>Technical Scanner</h1>
+    <form>
+        <select name="coin">
+            <option value="">-- Select a COIN --</option>
+            {% for x in coin %}
+                <option value="{{ x[:-4] }}" {% if pattern == key %}selected="selected"{% endif %}>{{ x[:-4] }}</option>
+            {% endfor %}
+        </select>
+
+        <br>
+        {% for key in candlestick_patterns %}
+            <input type="checkbox" id="patterns" name="patterns" value="{{ key }}">
+            <label for="patterns">{{ key }}</label><br>
+        {% endfor %}
+
+        <input type="submit" value="doit" />
+    </form>
+</body>
+</html>

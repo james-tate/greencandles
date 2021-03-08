@@ -5,12 +5,14 @@ import json
 from threading import Thread
 import time
 import greenCandles as candles
+from greenCandles import candlestick_patterns
 import pandas as pd
 import threading
 import plotly
 import plotly.graph_objects as go
 from filelock import Timeout, FileLock
 from datetime import datetime
+import talib
 import os
 import pathlib
 
@@ -356,7 +358,7 @@ def monitorView():
 
     return page
 
-#graph the limit to etc here
+#graph the current limit of a coin we have purchased
 @app.route('/graphLimit', methods=['GET'])
 def limitGraph():
 
@@ -418,6 +420,66 @@ def purchased():
     page += '</table>'
 
     return page
+
+#graph the coins we are tracking
+@app.route('/tracking', methods=['GET'])
+def tracking():
+    coin = request.args.get("coin")
+    if coin:
+        df = pd.read_csv(f'candleData/{coin}.csv', 
+            encoding='utf8', 
+            delimiter=',',
+            names=['time', 'open', "high", "low", "close",], 
+            index_col='time')
+        annotations = []
+        pattern = request.args.get("pattern")
+        #TODO need to figure out what makes each bullish/bearish
+        # add support for multiple 
+        for pattern in request.args.getlist("patterns"):
+            print(pattern)
+            pattern_function = getattr(talib, pattern)
+            results = pattern_function(df['open'], df['high'], df['low'], df['close'])
+            ann = False
+            df_r = results.to_frame()
+            for key, value in df_r.iterrows():
+                ann = False
+                if int(value) != 0:
+                    note = f'bullish {pattern_function.__name__}'
+                    ann = True
+                elif int(value) < 0:
+                    note = f'bearish {pattern_function.__name__}'
+                    ann = True
+                # df[pattern_function.__name__] = values
+                if ann:
+                    annotations.append(go.layout.Annotation(x=key,
+                        y=df.loc[key].at['close'],
+                        font=dict(color='black'),
+                        showarrow=True,
+                        arrowhead=1,
+                        arrowcolor="purple",
+                        arrowsize=1,
+                        arrowwidth=2,
+                        text=note))
+
+        layout = dict(
+            title=coin,
+            yaxis=go.layout.YAxis(title=go.layout.yaxis.Title( text="Price $ - US Dollars")),
+            annotations=annotations
+        )
+        fig = go.Figure(layout=layout)
+        fig.add_trace(go.Candlestick(x=df.index, 
+            open = df['open'], 
+            close = df['close'], 
+            low = df['low'], 
+            high = df['high'],
+            increasing_line_color= 'blue', decreasing_line_color= 'red'))
+        fig.update_layout(xaxis_rangeslider_visible=False)
+        fig.update_xaxes(showticklabels = False)
+        plotly.offline.plot(fig, filename='templates/name.html')
+        return render_template("name.html")
+    files = os.listdir("candleData/")
+    return render_template('tracker.html', candlestick_patterns=candlestick_patterns, coin=sorted(files))
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=11337, debug=True)
