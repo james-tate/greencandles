@@ -1,6 +1,7 @@
 # greencandles
 
-```pip3 install flask pandas python-binance filelock```
+```https://mrjbq7.github.io/ta-lib/install.html```
+```pip3 install ta-lib flask pandas python-binance filelock```
 
 ***WARNING THIS IS GUARANTEED TO HAVE BUGS.
 The use of this should be for educational purposes and you are assuming your own risk. I am in no way a financial advisor, so any of the following contents or comments is ABSOLUTELY, POSITIVELY not financial advice. IF YOU USE THIS BOT AND GIVE IT MONEY TO MANAGE YOU COULD GO BROKE!!!!!***
